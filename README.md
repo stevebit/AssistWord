@@ -87,14 +87,23 @@ cd bert-word-prediction
 pip install transformers coremltools torch
 ```
 
-### 3. Convert BERT Model to Core ML
+### 3. Convert BERT Model to Core ML ⚠️ REQUIRED
+
+**The model weights are not included in the repo due to GitHub's 100MB file size limit.**
+
+You must generate the Core ML model before running the app:
 
 ```bash
 cd Predict
 python3 convert_model.py
 ```
 
-This downloads `bert-base-uncased` from Hugging Face and converts it to Core ML format.
+This will:
+- Download `bert-base-uncased` from Hugging Face (~440MB)
+- Convert it to Core ML format (~420MB)
+- Save to `Predict/WordPredictor.mlpackage/`
+
+**First time setup takes ~2-5 minutes** depending on your internet speed.
 
 ### 4. Deploy to iPad
 
