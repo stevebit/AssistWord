@@ -17,7 +17,7 @@ struct ContentView: View {
     private let commonWords = ["a", "and", "can", "for", "I", "in", "is", "to", "we", "you"]
     
     // Row 2: Sentence builders (pronouns + common verbs)
-    private let sentenceBuilders = ["am", "are", "can", "have", "I", "is", "was", "we", "will", "you"]
+    private let sentenceBuilders = ["am", "are", "do", "have", "he", "not", "she", "was", "will", "with"]
     
     private var predictedWords: [WordPrediction] {
         // Force recalculation when sentence changes
@@ -59,6 +59,7 @@ struct ContentView: View {
             .frame(height: 120)
             .padding(.horizontal)
             .padding(.top, 10)
+            .padding(.bottom, 20)
             .onTapGesture {
                 isTextEditorFocused = true
             }
@@ -90,15 +91,9 @@ struct ContentView: View {
                                 }
                             }
                                 .frame(width: 190, height: 70)
-                                    .background(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.8)]),
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        )
-                                    )
+                                    .background(Color.blue)
                                     .cornerRadius(12)
-                                    .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+                                    .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 1)
                             }
                         .buttonStyle(PlainButtonStyle())
                         .onAppear {
@@ -127,20 +122,14 @@ struct ContentView: View {
                         Button(action: {
                             addWordToSentence(word)
                         }) {
-                            Text(word)
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
+                            Text(word.uppercased())
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(Color(.label))
                                 .frame(minWidth: 60, maxWidth: .infinity)
                                 .frame(height: 50)
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.green, Color.green.opacity(0.8)]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
+                                .background(Color(.systemGray5))
                                 .cornerRadius(10)
-                                .shadow(color: Color.black.opacity(0.2), radius: 3, x: 0, y: 2)
+                                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
@@ -153,20 +142,14 @@ struct ContentView: View {
                         Button(action: {
                             addWordToSentence(word)
                         }) {
-                            Text(word)
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
+                            Text(word.uppercased())
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(Color(.label))
                                 .frame(minWidth: 60, maxWidth: .infinity)
                                 .frame(height: 50)
-                                .background(
-                                    LinearGradient(
-                                        gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.8)]),
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
+                                .background(Color(.systemGray5))
                                 .cornerRadius(10)
-                                .shadow(color: Color.black.opacity(0.2), radius: 3, x: 0, y: 2)
+                                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
@@ -198,21 +181,23 @@ struct ContentView: View {
                     .frame(height: 60)
                     .background(Color.red)
                     .cornerRadius(12)
+                    .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 1)
                 }
                 
                 Button(action: {
                     sentence = ""
                 }) {
                     HStack {
-                        Image(systemName: "trash.fill")
+                        Image(systemName: "arrow.counterclockwise")
                         Text("Clear All")
                     }
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
-                    .background(Color.orange)
+                    .background(Color.blue)
                     .cornerRadius(12)
+                    .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 1)
                 }
             }
             .padding()
