@@ -102,7 +102,7 @@ class WordPredictionService {
         print("✅ Core ML predictions for '\(trimmed)': \(coreMLPredictions.map { "\($0.word) (\(String(format: "%.1f", $0.probability * 100))%)" })")
         return coreMLPredictions
     }
-    
+
     // Legacy method for backward compatibility - returns just words
     func predictWords(for sentence: String) -> [String] {
         return predictWordsWithProbabilities(for: sentence).map { $0.word }
@@ -134,7 +134,7 @@ class WordPredictionService {
                    let attentionArray = try MLMultiArray(shape: [1, NSNumber(value: maxSeqLen)], dataType: .int32)
                    for (index, attention) in attentionMask.enumerated() {
                        attentionArray[index] = NSNumber(value: attention)
-                   }
+        }
 
                    // Make prediction with BERT inputs
                    let input = WordPredictorInput(input_ids: inputArray, attention_mask: attentionArray)
@@ -209,8 +209,8 @@ class WordPredictionService {
 
                // Apply softmax to get probabilities and return with token IDs
                return applySoftmaxToPredictionsWithProbs(maskLogits, count: count)
-           }
-           
+    }
+
            // Legacy method for backward compatibility
            private func getTopPredictionsForMask(logits: MLMultiArray, maskPosition: Int, count: Int) -> [Int] {
                return getTopPredictionsForMaskWithProbs(logits: logits, maskPosition: maskPosition, count: count)

@@ -16,29 +16,29 @@ def convert_model():
         import coremltools as ct
         import torch
         import numpy as np
-
+        
         print("\n📥 Downloading BERT-base model for Masked LM...")
         model_name = "bert-base-uncased"
-
+        
         tokenizer = BertTokenizer.from_pretrained(model_name)
         model = BertForMaskedLM.from_pretrained(model_name)
         model.eval()
-
+        
         print("✅ Model downloaded successfully")
         print(f"   Vocabulary size: {tokenizer.vocab_size}")
-
+        
         # Save tokenizer mappings for Swift to use
         print("\n💾 Saving tokenizer mappings...")
         script_dir = os.path.dirname(os.path.abspath(__file__))
         predict_dir = os.path.join(script_dir, "Predict", "Predict")
-
+        
         # Save vocab.json for BERT
         vocab_dict = tokenizer.get_vocab()
         vocab_path = os.path.join(predict_dir, "vocab.json")
         with open(vocab_path, 'w') as f:
             json.dump(vocab_dict, f)
         print(f"   ✅ Saved vocab.json ({len(vocab_dict)} tokens)")
-
+        
         # For BERT, we don't need merges.txt, but let's create a placeholder
         merges_path = os.path.join(predict_dir, "merges.txt")
         with open(merges_path, 'w', encoding='utf-8') as f:
@@ -52,7 +52,7 @@ def convert_model():
             def __init__(self, bert_model):
                 super().__init__()
                 self.model = bert_model
-
+            
             def forward(self, input_ids, attention_mask):
                 # Get predictions for masked tokens
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
@@ -60,14 +60,14 @@ def convert_model():
                 return outputs.logits
 
         wrapped_model = BertMLMWrapper(model)
-
+        
         # Create example input (batch_size=1, seq_len=128 for BERT)
         example_input_ids = torch.randint(0, tokenizer.vocab_size, (1, 128))
         example_attention_mask = torch.ones(1, 128, dtype=torch.long)
 
         print("   Tracing model...")
         traced_model = torch.jit.trace(wrapped_model, (example_input_ids, example_attention_mask))
-
+        
         print("   Converting to Core ML...")
         # Convert to Core ML with proper inputs
         mlmodel = ct.convert(
@@ -83,7 +83,7 @@ def convert_model():
         # Save the model as .mlpackage (required for ML Program format)
         output_path = os.path.join(predict_dir, "WordPredictor.mlpackage")
         mlmodel.save(output_path)
-
+        
         print(f"✅ Model saved to {output_path}")
         print("🎉 BERT MLM conversion complete!")
         print("\n📋 Model Details:")
@@ -94,9 +94,9 @@ def convert_model():
         print("   1. Update WordPredictionService.swift for BERT input format")
         print("   2. Update tokenizer to use BERT tokenizer")
         print("   3. Test the model predictions")
-
+        
         return True
-
+        
     except Exception as e:
         print(f"❌ Error: {e}")
         print("\n🔧 Troubleshooting:")
@@ -177,9 +177,9 @@ def convert_distilbert_model():
 if __name__ == "__main__":
     print("🤖 BERT Core ML Converter")
     print("=" * 50)
-
+    
     success = convert_model()
-
+    
     if success:
         print("\n✅ Model ready! Update your Swift code for BERT format.")
     else:

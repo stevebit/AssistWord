@@ -9,200 +9,214 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var sentence: String = ""
-    @State private var selectedLetter: String = ""
     @State private var updateTrigger: Int = 0
+    @FocusState private var isTextEditorFocused: Bool
     private let predictionService = WordPredictionService()
     
+    // Row 1: Mixed common words (pronouns + conjunctions + verbs)
+    private let commonWords = ["a", "and", "can", "for", "I", "in", "is", "to", "we", "you"]
+    
+    // Row 2: Sentence builders (pronouns + common verbs)
+    private let sentenceBuilders = ["am", "are", "can", "have", "I", "is", "was", "we", "will", "you"]
+    
     private var predictedWords: [WordPrediction] {
-        // Force recalculation when sentence or selectedLetter changes
-        print("🔄 ContentView: predictedWords computed - sentence: '\(sentence)', selectedLetter: '\(selectedLetter)'")
+        // Force recalculation when sentence changes
+        print("🔄 ContentView: predictedWords computed - sentence: '\(sentence)'")
         let predictions = predictionService.predictWordsWithProbabilities(for: sentence)
-        
-        // Filter by selected letter if any
-        let filtered: [WordPrediction]
-        if selectedLetter.isEmpty {
-            filtered = predictions
-        } else {
-            filtered = predictions.filter { $0.word.lowercased().hasPrefix(selectedLetter.lowercased()) }
-        }
         
         // BERT predictions are sorted by probability (most likely first)
         // Keep all 15 words in probability order
-        let result = Array(filtered.prefix(15))
+        let result = Array(predictions.prefix(15))
         
         print("📋 ContentView: returning \(result.count) predictions: \(result.map { "\($0.word) (\(String(format: "%.1f", $0.probability * 100))%)" })")
         return result
     }
     
-    private var availableLetters: [String] {
-        let words = predictionService.predictWords(for: sentence)
-        return predictionService.getStartingLetters(from: words)
-    }
-    
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Top Section: Sentence Display
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Your Sentence:")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal)
-                    
-                    Text(sentence.isEmpty ? "Start building your sentence..." : sentence)
+        VStack(spacing: 0) {
+            // Top Section: Sentence Display (Editable) - FIXED HEIGHT
+            ZStack(alignment: .topLeading) {
+                if sentence.isEmpty {
+                    Text("Start building your sentence...")
                         .font(.system(size: 32, weight: .medium))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(12)
-                        .padding(.horizontal)
+                        .foregroundColor(.gray.opacity(0.5))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 16)
+                        .allowsHitTesting(false)
                 }
-                .padding(.top, 20)
-                .padding(.bottom, 30)
                 
-                // Middle Section: Word Buttons (15 words)
-                VStack(spacing: 15) {
-                    Text("Tap a word to add it:")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    LazyVGrid(columns: [
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12)
-                    ], spacing: 15) {
-                        ForEach(predictedWords, id: \.word) { prediction in
-                            Button(action: {
-                                addWordToSentence(prediction.word)
-                            }) {
-                                VStack(spacing: 4) {
-                                    Text(prediction.word.capitalized)
-                                        .font(.system(size: 24, weight: .semibold))
-                                        .foregroundColor(.white)
-                                    
-                                    // Show probability if available (not for hardcoded starters)
-                                    if prediction.probability > 0 {
-                                        Text(String(format: "%.1f%%", prediction.probability * 100))
-                                            .font(.system(size: 12, weight: .medium))
-                                            .foregroundColor(.white.opacity(0.8))
-                                    }
+                TextEditor(text: $sentence)
+                    .font(.system(size: 32, weight: .medium))
+                    .frame(height: 120)
+                    .padding(4)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    .focused($isTextEditorFocused)
+                    .onChange(of: sentence) { _ in
+                        updateTrigger += 1
+                    }
+            }
+            .frame(height: 120)
+            .padding(.horizontal)
+            .padding(.top, 10)
+            .onTapGesture {
+                isTextEditorFocused = true
+            }
+                
+            // Middle Section: Word Buttons (15 words) - FIXED HEIGHT
+            VStack(spacing: 15) {
+                LazyVGrid(columns: [
+                    GridItem(.fixed(190), spacing: 12),
+                    GridItem(.fixed(190), spacing: 12),
+                    GridItem(.fixed(190), spacing: 12),
+                    GridItem(.fixed(190), spacing: 12)
+                ], spacing: 15) {
+                    ForEach(predictedWords, id: \.word) { prediction in
+                        Button(action: {
+                            addWordToSentence(prediction.word)
+                        }) {
+                            VStack(spacing: 4) {
+                                Text(prediction.word.capitalized)
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                                
+                                // Show probability if available (not for hardcoded starters)
+                                if prediction.probability > 0 {
+                                    Text(String(format: "%.1f%%", prediction.probability * 100))
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.white.opacity(0.8))
                                 }
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 70)
+                            }
+                                .frame(width: 190, height: 70)
+                                    .background(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.8)]),
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .cornerRadius(12)
+                                    .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
+                            }
+                        .buttonStyle(PlainButtonStyle())
+                        .onAppear {
+                            print("🎨 Rendering word button: '\(prediction.word)' (\(String(format: "%.1f", prediction.probability * 100))%)")
+                        }
+                    }
+                }
+                .frame(height: 240)
+                .padding(.horizontal)
+                .id("words-\(sentence)-\(updateTrigger)") // Force update when sentence changes
+            }
+            .frame(height: 290)
+            .padding(.vertical, 10)
+            
+            Spacer(minLength: 0)
+            
+            // Bottom Section: Two Rows of Common Words
+            VStack(spacing: 12) {
+                Text("Quick words:")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                    
+                // Row 1: Mixed common words
+                HStack(spacing: 10) {
+                    ForEach(commonWords, id: \.self) { word in
+                        Button(action: {
+                            addWordToSentence(word)
+                        }) {
+                            Text(word)
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(minWidth: 60, maxWidth: .infinity)
+                                .frame(height: 50)
                                 .background(
                                     LinearGradient(
-                                        gradient: Gradient(colors: [Color.blue, Color.blue.opacity(0.8)]),
+                                        gradient: Gradient(colors: [Color.green, Color.green.opacity(0.8)]),
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
                                 )
-                                .cornerRadius(12)
-                                .shadow(color: Color.black.opacity(0.2), radius: 4, x: 0, y: 2)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            .onAppear {
-                                print("🎨 Rendering word button: '\(prediction.word)' (\(String(format: "%.1f", prediction.probability * 100))%)")
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                    .id("words-\(sentence)-\(selectedLetter)-\(updateTrigger)") // Force update when sentence or filter changes
-                }
-                .padding(.vertical, 20)
-                
-                Spacer()
-                
-                // Bottom Section: Letter Filters
-                VStack(spacing: 15) {
-                    Text("Filter by letter:")
-                        .font(.headline)
-                        .foregroundColor(.secondary)
-                    
-                    HStack(spacing: 12) {
-                        // Clear filter button
-                        Button(action: {
-                            selectedLetter = ""
-                        }) {
-                            Text("All")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(selectedLetter.isEmpty ? .white : .blue)
-                                .frame(width: 60, height: 60)
-                                .background(selectedLetter.isEmpty ? Color.blue : Color(.systemGray5))
                                 .cornerRadius(10)
+                                .shadow(color: Color.black.opacity(0.2), radius: 3, x: 0, y: 2)
                         }
-                        
-                        // Letter buttons
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                                ForEach(availableLetters, id: \.self) { letter in
-                                    Button(action: {
-                                        selectedLetter = selectedLetter == letter ? "" : letter
-                                    }) {
-                                        Text(letter)
-                                            .font(.system(size: 24, weight: .bold))
-                                            .foregroundColor(selectedLetter == letter ? .white : .blue)
-                                            .frame(width: 60, height: 60)
-                                            .background(selectedLetter == letter ? Color.blue : Color(.systemGray5))
-                                            .cornerRadius(10)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 4)
-                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .padding(.horizontal)
                 }
-                .padding(.vertical, 20)
-                .background(Color(.systemGray6))
+                .padding(.horizontal)
                 
-                // Action buttons
-                HStack(spacing: 20) {
-                    Button(action: {
-                        if !sentence.isEmpty {
-                            let words = sentence.components(separatedBy: .whitespaces)
-                            if words.count > 1 {
-                                sentence = words.dropLast().joined(separator: " ")
-                            } else {
-                                sentence = ""
-                            }
+                // Row 2: Sentence builders
+                HStack(spacing: 10) {
+                    ForEach(sentenceBuilders, id: \.self) { word in
+                        Button(action: {
+                            addWordToSentence(word)
+                        }) {
+                            Text(word)
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(minWidth: 60, maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color.purple, Color.purple.opacity(0.8)]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .cornerRadius(10)
+                                .shadow(color: Color.black.opacity(0.2), radius: 3, x: 0, y: 2)
                         }
-                    }) {
-                        HStack {
-                            Image(systemName: "delete.left.fill")
-                            Text("Delete")
-                        }
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(Color.red)
-                        .cornerRadius(12)
-                    }
-                    
-                    Button(action: {
-                        sentence = ""
-                        selectedLetter = ""
-                    }) {
-                        HStack {
-                            Image(systemName: "trash.fill")
-                            Text("Clear All")
-                        }
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(Color.orange)
-                        .cornerRadius(12)
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
-                .padding()
+                .padding(.horizontal)
             }
-            .navigationTitle("Sentence Builder")
-            .navigationBarTitleDisplayMode(.large)
+            .padding(.vertical, 15)
+            .background(Color(.systemGray6))
+            
+            // Action buttons
+            HStack(spacing: 20) {
+                Button(action: {
+                    if !sentence.isEmpty {
+                        let words = sentence.components(separatedBy: .whitespaces)
+                        if words.count > 1 {
+                            sentence = words.dropLast().joined(separator: " ")
+                        } else {
+                            sentence = ""
+                        }
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "delete.left.fill")
+                        Text("Delete")
+                    }
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
+                    .background(Color.red)
+                    .cornerRadius(12)
+                }
+                
+                Button(action: {
+                    sentence = ""
+                }) {
+                    HStack {
+                        Image(systemName: "trash.fill")
+                        Text("Clear All")
+                    }
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 60)
+                    .background(Color.orange)
+                    .cornerRadius(12)
+                }
+            }
+            .padding()
         }
-        .navigationViewStyle(StackNavigationViewStyle())
     }
     
     private func addWordToSentence(_ word: String) {
@@ -212,7 +226,6 @@ struct ContentView: View {
         } else {
             sentence += " " + word.lowercased()
         }
-        selectedLetter = "" // Clear filter after adding word
         updateTrigger += 1 // Force view update
         print("✅ New sentence: '\(sentence)', updateTrigger: \(updateTrigger)")
     }
